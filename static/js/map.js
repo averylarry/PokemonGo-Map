@@ -323,20 +323,18 @@ function initSidebar () {
   $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
   $('#ranges-switch').prop('checked', Store.get('showRanges'))
   $('#sound-switch').prop('checked', Store.get('playSound'))
-  var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'))
+  var searchBox = new google.maps.places.Autocomplete(document.getElementById('next-location'))
   $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
 
   updateSearchStatus()
   setInterval(updateSearchStatus, 5000)
 
-  searchBox.addListener('places_changed', function () {
-    var places = searchBox.getPlaces()
+  searchBox.addListener('place_changed', function () {
+    var place = searchBox.getPlace()
 
-    if (places.length === 0) {
-      return
-    }
+    if (!place.geometry) return
 
-    var loc = places[0].geometry.location
+    var loc = place.geometry.location
     changeLocation(loc.lat(), loc.lng())
   })
 
@@ -522,7 +520,7 @@ function pokestopLabel (expireTime, latitude, longitude) {
 
     str = `
       <div>
-        <b>Lured Pokéstop</b>
+        <b>Lured PokÃ©stop</b>
       </div>
       <div>
         Lure expires at ${pad(expireDate.getHours())}:${pad(expireDate.getMinutes())}:${pad(expireDate.getSeconds())}
@@ -537,7 +535,7 @@ function pokestopLabel (expireTime, latitude, longitude) {
   } else {
     str = `
       <div>
-        <b>Pokéstop</b>
+        <b>PokÃ©stop</b>
       </div>
       <div>
         Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
@@ -773,10 +771,10 @@ function getColorBySpawnTime (value) {
   }
   // Hardcoded 30 minute timespan for spawns.  Eventually the color changing should either be
   // deprecated or it should account for different spawntypes.
-  var hue = 275 // light purple when spawn is neither about to spawn nor active
-  if (diff < 1800) { // green to red over 30 minutes of active spawn
+  var hue = 275 // Light purple when spawn is neither about to spawn nor active.
+  if (diff < 1800) { // Green to red over 30 minutes of active spawn.
     hue = diff / 15
-  } else if (diff < 2100) { // light blue to dark blue over 5 minutes til spawn
+  } else if (diff < 2100) { // Light blue to dark blue over the 5 minutes before a spawn.
     hue = (11 - diff / 60 / 5) * 50
   }
 
@@ -1718,12 +1716,12 @@ $(function () {
 
     // setup the filter lists
     $selectExclude.select2({
-      placeholder: i8ln('Select Pokémon'),
+      placeholder: i8ln('Select PokÃ©mon'),
       data: pokeList,
       templateResult: formatState
     })
     $selectPokemonNotify.select2({
-      placeholder: i8ln('Select Pokémon'),
+      placeholder: i8ln('Select PokÃ©mon'),
       data: pokeList,
       templateResult: formatState
     })
