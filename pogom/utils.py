@@ -197,7 +197,7 @@ def get_args():
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones.')
     parser.add_argument('-odt', '--on-demand_timeout', help='Pause searching while web UI is inactive for this timeout(in seconds).', type=int, default=0)
     parser.add_argument('-dt', '--default-spawn-timespan',
-                        help='Time in minutes to use as the default length of a spawn with an unknown disappear time',
+                        help='Time in minutes to use as the default timespan of a spawn with an unknown disappear time.',
                         type=int, default=30)
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
