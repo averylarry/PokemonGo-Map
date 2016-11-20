@@ -100,7 +100,7 @@ class Pokemon(BaseModel):
     def get_active(swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):
         rightnow = datetime.utcnow()
 
-        # recenttime is used in queries to compare with last_modified similar to how disappear_time gets compared with rightnow
+        # Using recenttime in queries to compare with last_modified similar to how disappear_time gets compared with rightnow.
         recenttime = rightnow - timedelt
 
         query = Pokemon.select()
@@ -154,10 +154,10 @@ class Pokemon(BaseModel):
         for p in query:
             # Eventually we'll have to add logic to manage the various spawntypes.
             if p['disappear_time'] == unknowntime:
-                # when disappear_time equals unknowntime then we want to use last_modified plus
-                # the default visible timespan as the calculated disappear_time
+                # When disappear_time equals unknowntime then we want to use last_modified plus
+                # the default visible timespan as the calculated disappear_time.
                 p['disappear_time'] = p['last_modified'] + timedelt
-                # dtisknown is a flag that gets passed to the web interface specifying
+                # Use dtisknown as a flag that gets passed to the web interface specifying
                 # whether the disappear time given is known or guessed.
                 p['dtisknown'] = False
             else:
@@ -403,18 +403,18 @@ class Pokemon(BaseModel):
 
         # We need to figure out the spawn time so we know when to scan.
         for location in filtered:
-            # todo: account for different spawntypes
+            # Eventually this needs to account for spawntypes.  Until then we'll use the default spawn timespan.
             if (location['disappear_time'] == unknowntime):
-                # if the disappear_time is unknown, then try to figure out the earliest <seconds after the hour> of a contiguous timespan for a spawnpoint
+                # If the disappear_time is unknown, then try to figure out the earliest <seconds after the hour> of a contiguous timespan for a spawnpoint
                 # while accounting for wrapping around an hour and directly use that as the spawntime for a spawnpoint.
                 if ((location['minseconds'] < args.default_spawn_timespan * 60) and (location['maxseconds'] > args.default_spawn_timespan * 60)):
-                    # when the earliest scan is within the first timespan of an hour and the latest scan is within the last timespan of
-                    # an hour then we need to use the earliest scan in the final timespan of an hour to wrap around the hour.
+                    # When the earliest scan is within the first timespan of an hour and the latest scan is within the last timespan of
+                    # an hour then we need to use the earliest scan from the final timespan of an hour in order to wrap around the hour.
                     location['time'] = location['shiftedminseconds']
                 else:
                     location['time'] = location['minseconds']
             else:
-                # if disappear_time is known, then calculate spawntime.
+                # If disappear_time is known, then calculate spawntime.
                 location['time'] = cls.get_spawn_time(location['disappear_time'].minute * 60 + location['disappear_time'].second)
 
         return filtered
@@ -791,7 +791,7 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
         })
 
 
-# todo: this probably shouldn't _really_ be in "models" anymore, but whatever. ¯\_(ツ)_/¯
+# This probably shouldn't _really_ be in "models" anymore, but whatever. ¯\_(ツ)_/¯
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api):
     pokemons = {}
     pokestops = {}
@@ -879,7 +879,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                         if d_t < datetime.utcnow():
                             d_t = d_t + timedelta(hours=1)
                 else:
-                    # Set disappear time to be 1/1/1900 to represent an unknown disappear time
+                    # Set disappear time to be 1/1/1900 to represent an unknown disappear time.
                     d_t = unknowntime
 
             printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
