@@ -79,8 +79,7 @@ class BaseModel(flaskDb.Model):
 
 
 class Pokemon(BaseModel):
-    # We are base64 encoding the ids delivered by the api
-    # because they are too big for sqlite to handle
+    # We are base64 encoding the ids delivered by the api because they are too big for sqlite to handle.
     encounter_id = CharField(primary_key=True, max_length=50)
     spawnpoint_id = CharField(index=True)
     pokemon_id = IntegerField(index=True)
@@ -107,13 +106,13 @@ class Pokemon(BaseModel):
         query = Pokemon.select()
         if not (swLat and swLng and neLat and neLng):
             # Here and in many places below, instead of using only disappear_time in the future we also
-            # use last_modified within the recent default visible timespan if the disappear_time is unknown
+            # use last_modified within the recent default visible timespan if the disappear_time is unknown.
             query = (query
                      .where((Pokemon.disappear_time > rightnow) |
                             ((Pokemon.disappear_time == unknowntime) & (Pokemon.last_modified > recenttime)))
                      .dicts())
         elif timestamp > 0:
-            # If timestamp is known only load modified pokemon in the visible area
+            # If timestamp is known only load modified pokemon in the visible area.
             query = (query
                      .where((Pokemon.last_modified > datetime.utcfromtimestamp(timestamp / 1000)) &
                             # (Pokemon.disappear_time > rightnow)) &
@@ -148,7 +147,7 @@ class Pokemon(BaseModel):
                               (Pokemon.longitude <= neLng))))
                      .dicts())
 
-        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append().
         gc.disable()
 
         pokemons = []
@@ -200,7 +199,7 @@ class Pokemon(BaseModel):
                             (Pokemon.longitude <= neLng))
                      .dicts())
 
-        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append().
         gc.disable()
 
         pokemons = []
@@ -252,7 +251,7 @@ class Pokemon(BaseModel):
                  .dicts()
                  )
 
-        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append().
         gc.disable()
 
         pokemons = []
@@ -372,7 +371,7 @@ class Pokemon(BaseModel):
 
     @classmethod
     def get_spawnpoints_in_hex(cls, center, steps):
-        # I believe used for spawnpoint scanning
+        # I believe used for spawnpoint scanning.
         log.info('Finding spawn points {} steps away'.format(steps))
 
         n, e, s, w = hex_bounds(center, steps)
@@ -391,10 +390,10 @@ class Pokemon(BaseModel):
 
         s = list(query.dicts())
 
-        # The distance between scan circles of radius 70 in a hex is 121.2436
-        # steps - 1 to account for the center circle then add 70 for the edge
+        # The distance between scan circles of radius 70 in a hex is 121.2436.
+        # Use steps - 1 to account for the center circle then add 70 for the edge.
         step_distance = ((steps - 1) * 121.2436) + 70
-        # Compare spawnpoint list to a circle with radius steps * 120
+        # Compare spawnpoint list to a circle with radius steps * 120.
         # Uses the direct geopy distance between the center and the spawnpoint.
         filtered = []
 
@@ -493,7 +492,7 @@ class Pokestop(BaseModel):
                             (Pokestop.longitude <= neLng))
                      .dicts())
 
-        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append().
         gc.disable()
 
         pokestops = []
@@ -567,7 +566,7 @@ class Gym(BaseModel):
                               (Gym.longitude <= neLng))
                        .dicts())
 
-        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append().
         gc.disable()
 
         gyms = {}
@@ -749,8 +748,8 @@ class GymDetails(BaseModel):
 
 
 def hex_bounds(center, steps):
-    # Make a box that is (70m * step_limit * 2) + 70m away from the center point
-    # Rationale is that you need to travel
+    # Make a box that is (70m * step_limit * 2) + 70m away from the center point.
+    # Rationale is that you need to travel.
     sp_dist = 0.07 * 2 * steps
     n = get_new_coords(center, sp_dist, 0)[0]
     e = get_new_coords(center, sp_dist, 90)[1]
@@ -792,7 +791,7 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
         })
 
 
-# todo: this probably shouldn't _really_ be in "models" anymore, but w/e
+# todo: this probably shouldn't _really_ be in "models" anymore, but whatever. ¯\_(ツ)_/¯
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api):
     pokemons = {}
     pokestops = {}
@@ -824,31 +823,32 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
 
     if pokesfound:
         encounter_ids = [b64encode(str(p['encounter_id'])) for p in wild_pokemon]
-        # For all the wild pokemon we found check if an active pokemon is in the database
+        # For all the wild Pokemon we found check if an active Pokemon is in the database.
         query = (Pokemon
                  .select(Pokemon.encounter_id, Pokemon.spawnpoint_id, fn.Max(Pokemon.disappear_time).alias('disappear_time'))
                  .where(Pokemon.encounter_id << encounter_ids)
                  .group_by(Pokemon.encounter_id, Pokemon.spawnpoint_id)
                  .dicts())
 
-        # Store all encounter_ids, spawnpoint_ids, and disappear times for the pokemon in query (all that is needed to make sure its unique)
+        # Store known Pokemon information for various comparisons below.
         encountered_pokemon = [(p['encounter_id'], p['spawnpoint_id'], p['disappear_time']) for p in query]
 
         for p in wild_pokemon:
             if (b64encode(str(p['encounter_id'])), p['spawn_point_id'], datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + p['time_till_hidden_ms']) / 1000.0)) in encountered_pokemon:
-                # If pokemon has been encountered before and we already have a valid TTH recorded do not process.
+                # If Pokemon has been encountered before and we already have a valid TTH recorded then do not process.
                 skipped += 1
                 continue
 
-            # Surely there's a better way to do this but I don't know python
+            # Surely there's a better way to do this (using encountered_pokemon directly) but I don't know python.
+            # Create a list from encountered_pokemon that doesn't include disappear_time.
             encountered_pokemon2 = [(t[0], t[1]) for t in encountered_pokemon]
 
             if ((b64encode(str(p['encounter_id'])), p['spawn_point_id']) in encountered_pokemon2) & ((p['time_till_hidden_ms'] >= 3600000) | (p['time_till_hidden_ms'] <= 0)):
-                # If pokemon has been encountered before and we still have an invalid TTH do not process.
+                # If pokemon has been encountered before but we still have an invalid TTH then do not process.
                 skipped += 1
                 continue
 
-            # Check for a valid TTH
+            # Check for a valid TTH.
             if 0 < p['time_till_hidden_ms'] < 3600000:
                 d_t = datetime.utcfromtimestamp(
                     (p['last_modified_timestamp_ms'] +
@@ -865,7 +865,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 else:
                     startdate = datetime.utcnow()
 
-                # See if we can find a known disappear time for the spawnpoint
+                # See if we can find a known disappear time for the spawnpoint.
                 query = (Pokemon
                          .select((fn.Max(Pokemon.disappear_time)).alias('disappear_time'))
                          .where((Pokemon.spawnpoint_id == p['spawn_point_id']) & (Pokemon.disappear_time >= startdate))
@@ -885,7 +885,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
             printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                          p['longitude'], d_t)
 
-            # Scan for IVs and moves
+            # Scan for IVs and moves.
             encounter_result = None
             if (args.encounter and (p['pokemon_data']['pokemon_id'] in args.encounter_whitelist or
                                     p['pokemon_data']['pokemon_id'] not in args.encounter_blacklist and not args.encounter_whitelist)):
@@ -923,7 +923,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 encountered_pokestops = [(f['pokestop_id'], int((f['last_modified'] - datetime(1970, 1, 1)).total_seconds())) for f in query]
 
         for f in forts:
-            if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops
+            if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops.
                 if 'active_fort_modifier' in f:
                     lure_expiration = datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0) + timedelta(minutes=30)
@@ -941,7 +941,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
-                # Send all pokéstops to webhooks
+                # Send all pokéstops to webhooks.
                 if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
                     # similar to above and previous commits.
@@ -977,7 +977,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 }
 
             elif config['parse_gyms'] and f.get('type') is None:  # Currently, there are only stops and gyms
-                # Send gyms to webhooks
+                # Send gyms to webhooks.
                 if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
                     # similar to above and previous commits.
@@ -1126,7 +1126,7 @@ def parse_gyms(args, gym_responses, wh_update_queue):
     # We _could_ synchronously upsert GymDetails, then queue the other tables for
     # upsert, but that would put that Gym's overall information in a weird non-atomic state.
 
-    # upsert all the models
+    # Upsert all the models.
     if len(gym_details):
         bulk_upsert(GymDetails, gym_details)
     if len(gym_pokemon):
@@ -1137,11 +1137,11 @@ def parse_gyms(args, gym_responses, wh_update_queue):
     # This needs to be completed in a transaction, because we don't wany any other thread or process
     # to mess with the GymMembers for the gyms we're updating while we're updating the bridge table.
     with flaskDb.database.transaction():
-        # get rid of all the gym members, we're going to insert new records
+        # Get rid of all the gym members, we're going to insert new records.
         if len(gym_details):
             DeleteQuery(GymMember).where(GymMember.gym_id << gym_details.keys()).execute()
 
-        # insert new gym members
+        # Insert new gym members.
         if len(gym_members):
             bulk_upsert(GymMember, gym_members)
 
@@ -1151,7 +1151,7 @@ def parse_gyms(args, gym_responses, wh_update_queue):
 
 
 def db_updater(args, q):
-    # The forever loop
+    # The forever loop.
     while True:
         try:
 
@@ -1162,7 +1162,7 @@ def db_updater(args, q):
                 except Exception as e:
                     log.warning('%s... Retrying', e)
 
-            # Loop the queue
+            # Loop the queue.
             while True:
                 model, data = q.get()
                 bulk_upsert(model, data)
@@ -1181,7 +1181,7 @@ def db_updater(args, q):
 def clean_db_loop(args):
     while True:
         try:
-            # Clean out old scanned locations
+            # Clean out old scanned locations.
             query = (ScannedLocation
                      .delete()
                      .where((ScannedLocation.last_modified <
@@ -1200,13 +1200,13 @@ def clean_db_loop(args):
                              (datetime.utcnow() - timedelta(minutes=30)))))
             query.execute()
 
-            # Remove active modifier from expired lured pokestops
+            # Remove active modifier from expired lured pokestops.
             query = (Pokestop
                      .update(lure_expiration=None, active_fort_modifier=None)
                      .where(Pokestop.lure_expiration < datetime.utcnow()))
             query.execute()
 
-            # If desired, clear old pokemon spawns
+            # If desired, clear old pokemon spawns.
             if args.purge_data > 0:
                 query = (Pokemon
                          .delete()
@@ -1282,19 +1282,19 @@ def verify_database_schema(db):
 
 
 def database_migrate(db, old_ver):
-    # Update database schema version
+    # Update database schema version.
     Versions.update(val=db_schema_version).where(Versions.key == 'schema_version').execute()
 
     log.info("Detected database version %i, updating to %i", old_ver, db_schema_version)
 
-    # Perform migrations here
+    # Perform migrations here.
     migrator = None
     if args.db_type == 'mysql':
         migrator = MySQLMigrator(db)
     else:
         migrator = SqliteMigrator(db)
 
-#   No longer necessary, we're doing this at schema 4 as well
+#   No longer necessary, we're doing this at schema 4 as well.
 #    if old_ver < 1:
 #        db.drop_tables([ScannedLocation])
 
@@ -1312,8 +1312,8 @@ def database_migrate(db, old_ver):
         db.drop_tables([ScannedLocation])
 
     if old_ver < 5:
-        # Some pokemon were added before the 595 bug was "fixed"
-        # Clean those up for a better UX
+        # Some pokemon were added before the 595 bug was "fixed".
+        # Clean those up for a better UX.
         query = (Pokemon
                  .delete()
                  .where(Pokemon.disappear_time >
