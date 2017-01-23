@@ -12,6 +12,7 @@ import pprint
 import time
 import random
 from s2sphere import CellId, LatLng
+from .manual_captcha import chrome_verifier
 
 from . import config
 
@@ -113,6 +114,9 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('-cs', '--captcha-solving',
                         help='Enables captcha solving.',
+                        action='store_true', default=False)
+    parser.add_argument('-vc', '--validate-chrome',
+                        help='validates chrome installation.',
                         action='store_true', default=False)
     parser.add_argument('-ck', '--captcha-key',
                         help='2Captcha API key.')
@@ -588,6 +592,10 @@ def get_args():
         # Disable webhook scheduler updates if webhooks are disabled
         if args.webhooks is None:
             args.webhook_scheduler_updates = False
+
+        # validates chrome installation
+        if args.captcha_solving and not args.validate_chrome:
+            args.validate_chrome = chrome_verifier()
 
     return args
 
